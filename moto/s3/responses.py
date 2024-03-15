@@ -327,7 +327,7 @@ class S3Response(BaseResponse):
         if method == "HEAD":
             return self._bucket_response_head(bucket_name, querystring)
         elif method == "GET":
-            return self._bucket_response_get(bucket_name, querystring)
+            return self._bucket_response_get(bucket_name, querystring, request.headers)
         elif method == "PUT":
             return self._bucket_response_put(
                 request, region_name, bucket_name, querystring
@@ -491,7 +491,7 @@ class S3Response(BaseResponse):
         return response_headers
 
     def _bucket_response_get(
-        self, bucket_name: str, querystring: Dict[str, Any]
+        self, bucket_name: str, querystring: Dict[str, Any], headers: Dict[str, Any]
     ) -> Union[str, TYPE_RESPONSE]:
         self._set_action("BUCKET", "GET", querystring)
         self._authenticate_and_authorize_s3_action(bucket_name=bucket_name)
@@ -665,7 +665,7 @@ class S3Response(BaseResponse):
             template = self.response_template(S3_ENCRYPTION_CONFIG)
             return 200, {}, template.render(encryption=encryption)
         elif querystring.get("list-type", [None])[0] == "2":
-            return 200, {}, self._handle_list_objects_v2(bucket_name, querystring)
+            return 200, {}, self._handle_list_objects_v2(bucket_name, querystring, headers)
         elif "replication" in querystring:
             replication = self.backend.get_bucket_replication(bucket_name)
             if not replication:
@@ -734,7 +734,7 @@ class S3Response(BaseResponse):
             self.data["Action"] = ACTION_MAP[action_resource_type][method]["DEFAULT"]
 
     def _handle_list_objects_v2(
-        self, bucket_name: str, querystring: Dict[str, Any]
+        self, bucket_name: str, querystring: Dict[str, Any], headers: Dict[str, Any]
     ) -> str:
         template = self.response_template(S3_BUCKET_GET_RESPONSE_V2)
         bucket = self.backend.get_bucket(bucket_name)
@@ -752,6 +752,7 @@ class S3Response(BaseResponse):
         max_keys = int(querystring.get("max-keys", [1000])[0])
         start_after = querystring.get("start-after", [None])[0]
         encoding_type = querystring.get("encoding-type", [None])[0]
+        
 
         (
             truncated_keys,
@@ -2402,6 +2403,12 @@ S3_BUCKET_GET_RESPONSE_V2 = """<?xml version="1.0" encoding="UTF-8"?>
       <ETag>{{ key.etag }}</ETag>
       <Size>{{ key.size }}</Size>
       <StorageClass>{{ key.storage_class }}</StorageClass>
+      {% if restore_status %}
+      <RestoreStatus>
+        <IsRestoreInProgress>True<IsRestoreInProgress>
+        <RestoreExpiryDate>{{ key.last_modified_ISO8601 }}</RestoreExpiryDate>
+      </RestoreStatus>      
+      {% endif %}
       {% if fetch_owner %}
       <Owner>
         <ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
