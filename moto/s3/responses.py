@@ -2410,7 +2410,7 @@ S3_BUCKET_GET_RESPONSE_V2 = """<?xml version="1.0" encoding="UTF-8"?>
       <StorageClass>{{ key.storage_class }}</StorageClass>
       {% if restore_status %}
       <RestoreStatus>
-        <IsRestoreInProgress>True<IsRestoreInProgress>
+        <IsRestoreInProgress>True</IsRestoreInProgress>
         <RestoreExpiryDate>{{ key.last_modified_ISO8601 }}</RestoreExpiryDate>
       </RestoreStatus>      
       {% endif %}
