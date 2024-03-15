@@ -747,6 +747,10 @@ class S3Response(BaseResponse):
         if prefix and isinstance(prefix, bytes):
             prefix = prefix.decode("utf-8")
         delimiter = querystring.get("delimiter", [None])[0]
+        if headers.get("x-amz-optional-object-attributes", None):
+            restore_status = True
+        else:
+            restore_status = False
 
         fetch_owner = querystring.get("fetch-owner", [False])[0]
         max_keys = int(querystring.get("max-keys", [1000])[0])
@@ -790,6 +794,7 @@ class S3Response(BaseResponse):
             next_continuation_token=next_continuation_token,
             start_after=None if continuation_token else start_after,
             encoding_type=encoding_type,
+            restore_status=restore_status
         )
 
     @staticmethod
